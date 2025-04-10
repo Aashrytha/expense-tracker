@@ -1,0 +1,174 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h1>Budget Management</h1>
+        <p class="lead">Set and track your monthly budgets</p>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-12">
+        <!-- Month/Year selector -->
+        <div class="card mb-4">
+            <div class="card-body">
+                <form method="GET" action="{{ url_for('main.budgets') }}" class="row g-3 align-items-center">
+                    <div class="col-auto">
+                        <label class="col-form-label">View budgets for:</label>
+                    </div>
+                    <div class="col-auto">
+                        <select name="month" id="month-select" class="form-select">
+                            {% for month_num, month_name in form.month.choices %}
+                            <option value="{{ month_num }}" {% if month_num == month %}selected{% endif %}>{{ month_name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-auto">
+                        <select name="year" id="year-select" class="form-select">
+                            {% for year_num in range(2020, 2101) %}
+                            <option value="{{ year_num }}" {% if year_num == year %}selected{% endif %}>{{ year_num }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-auto">
+                        <button type="submit" class="btn btn-primary">View</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Set Budget</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="">
+                    {{ form.hidden_tag() }}
+                    <div class="mb-3">
+                        {{ form.category_id.label(class="form-label") }}
+                        {{ form.category_id(class="form-select") }}
+                        {% for error in form.category_id.errors %}
+                        <span class="text-danger">{{ error }}</span>
+                        {% endfor %}
+                    </div>
+                    <div class="mb-3">
+                        {{ form.amount.label(class="form-label") }}
+                        {{ form.amount(class="form-control", type="number", step="0.01") }}
+                        {% for error in form.amount.errors %}
+                        <span class="text-danger">{{ error }}</span>
+                        {% endfor %}
+                    </div>
+                    <div class="mb-3">
+                        {{ form.month.label(class="form-label") }}
+                        {{ form.month(class="form-select") }}
+                        {% for error in form.month.errors %}
+                        <span class="text-danger">{{ error }}</span>
+                        {% endfor %}
+                    </div>
+                    <div class="mb-3">
+                        {{ form.year.label(class="form-label") }}
+                        {{ form.year(class="form-control") }}
+                        {% for error in form.year.errors %}
+                        <span class="text-danger">{{ error }}</span>
+                        {% endfor %}
+                    </div>
+                    {{ form.submit(class="btn btn-primary") }}
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Budget vs. Spending ({{ form.month.choices[month-1][1] }} {{ year }})</h5>
+            </div>
+            <div class="card-body">
+                {% if budget_data %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Category</th>
+                                <th>Budget</th>
+                                <th>Spent</th>
+                                <th>Remaining</th>
+                                <th>Progress</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in budget_data %}
+                            <tr>
+                                <td>{{ item.budget.category.name }}</td>
+                                <td>${{ "%.2f"|format(item.budget.amount) }}</td>
+                                <td>${{ "%.2f"|format(item.spent) }}</td>
+                                <td>
+                                    {% if item.remaining >= 0 %}
+                                    <span class="text-success">${{ "%.2f"|format(item.remaining) }}</span>
+                                    {% else %}
+                                    <span class="text-danger">-${{ "%.2f"|format(item.remaining|abs) }}</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="progress">
+                                        {% if item.percentage <= 75 %}
+                                        <div class="progress-bar bg-success" role="progressbar" style="width: {{ item.percentage }}%">
+                                            {{ "%.0f"|format(item.percentage) }}%
+                                        </div>
+                                        {% else %}
+                                        {% if item.percentage <= 90 %}
+                                        <div class="progress-bar bg-warning" role="progressbar" style="width: {{ item.percentage }}%">
+                                            {{ "%.0f"|format(item.percentage) }}%
+                                        </div>
+                                        {% else %}
+                                        {% if item.percentage > 100 %}
+                                        <div class="progress-bar bg-danger" role="progressbar" style="width: 100%">
+                                            {{ "%.0f"|format(item.percentage) }}%
+                                        </div>
+                                        {% else %}
+                                        <div class="progress-bar bg-danger" role="progressbar" style="width: {{ item.percentage }}%">
+                                            {{ "%.0f"|format(item.percentage) }}%
+                                        </div>
+                                        {% endif %}
+                                        {% endif %}
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-muted">No budgets set for {{ form.month.choices[month-1][1] }} {{ year }}. Use the form to set your first budget.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Handle month/year selection change
+    const monthSelect = document.getElementById('month-select');
+    const yearSelect = document.getElementById('year-select');
+    
+    if (monthSelect && yearSelect) {
+        monthSelect.addEventListener('change', function() {
+            document.getElementById('month-select').form.submit();
+        });
+        
+        yearSelect.addEventListener('change', function() {
+            document.getElementById('year-select').form.submit();
+        });
+    }
+});
+</script>
+{% endblock %}

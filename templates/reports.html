@@ -1,0 +1,317 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h1>Expense Reports</h1>
+        <p class="lead">Analyze your spending patterns</p>
+    </div>
+</div>
+
+<!-- Month/Year Selector -->
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-body">
+                <form method="GET" action="{{ url_for('main.reports') }}" class="row g-3 align-items-center">
+                    <div class="col-auto">
+                        <label class="col-form-label">View reports for:</label>
+                    </div>
+                    <div class="col-auto">
+                        <select name="month" id="month-select" class="form-select">
+                            {% for month_num, month_name in form.month.choices %}
+                            <option value="{{ month_num }}" {% if month_num == month %}selected{% endif %}>{{ month_name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-auto">
+                        <select name="year" id="year-select" class="form-select">
+                            {% for year_num, year_name in form.year.choices %}
+                            <option value="{{ year_num }}" {% if year_num == year %}selected{% endif %}>{{ year_name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-auto">
+                        <button type="submit" class="btn btn-primary">Generate Report</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Monthly Summary -->
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5 class="mb-0">Monthly Summary</h5>
+            </div>
+            <div class="card-body text-center">
+                <h6>Total Spending for {{ month_name }} {{ year }}</h6>
+                <p class="display-4">${{ "%.2f"|format(monthly_spending) }}</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-8">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5 class="mb-0">Month over Month</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="monthlyTrendChart" height="250"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Category Analysis -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5 class="mb-0">Spending by Category</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="categoryChart" height="300"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5 class="mb-0">Category Breakdown</h5>
+            </div>
+            <div class="card-body">
+                {% if category_spending %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Category</th>
+                                <th>Amount</th>
+                                <th>% of Total</th>
+                                <th>Budget</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in category_spending %}
+                            <tr>
+                                <td>{{ item.category }}</td>
+                                <td>${{ "%.2f"|format(item.spent) }}</td>
+                                <td>{{ "%.1f"|format(item.percentage) }}%</td>
+                                <td>
+                                    {% if item.budget > 0 %}
+                                    ${{ "%.2f"|format(item.budget) }}
+                                    {% if item.spent > item.budget %}
+                                    <span class="badge bg-danger">Over Budget</span>
+                                    {% else %}
+                                    <span class="badge bg-success">Within Budget</span>
+                                    {% endif %}
+                                    {% else %}
+                                    <span class="text-muted">No budget set</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-muted">No spending data for this month.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Daily Spending -->
+<div class="row">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Daily Spending ({{ month_name }} {{ year }})</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="dailySpendingChart" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Month/Year selection event handlers
+    const monthSelect = document.getElementById('month-select');
+    const yearSelect = document.getElementById('year-select');
+    
+    if (monthSelect && yearSelect) {
+        monthSelect.addEventListener('change', function() {
+            document.getElementById('month-select').form.submit();
+        });
+        
+        yearSelect.addEventListener('change', function() {
+            document.getElementById('year-select').form.submit();
+        });
+    }
+    
+    // Category chart
+    const categoryData = {{ category_spending|tojson }};
+    if (categoryData.length > 0) {
+        const ctxCategory = document.getElementById('categoryChart').getContext('2d');
+        
+        const categoryLabels = categoryData.map(item => item.category);
+        const categoryAmounts = categoryData.map(item => item.spent);
+        
+        // Generate colors for each category
+        const backgroundColors = [
+            'rgba(255, 99, 132, 0.7)',
+            'rgba(54, 162, 235, 0.7)',
+            'rgba(255, 206, 86, 0.7)',
+            'rgba(75, 192, 192, 0.7)',
+            'rgba(153, 102, 255, 0.7)',
+            'rgba(255, 159, 64, 0.7)',
+            'rgba(255, 0, 0, 0.7)',
+            'rgba(0, 255, 0, 0.7)',
+            'rgba(0, 0, 255, 0.7)',
+            'rgba(128, 128, 128, 0.7)'
+        ];
+        
+        new Chart(ctxCategory, {
+            type: 'pie',
+            data: {
+                labels: categoryLabels,
+                datasets: [{
+                    data: categoryAmounts,
+                    backgroundColor: backgroundColors.slice(0, categoryLabels.length),
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'right',
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const label = context.label || '';
+                                const value = context.raw || 0;
+                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                const percentage = Math.round((value / total * 100) * 10) / 10;
+                                return `${label}: $${value.toFixed(2)} (${percentage}%)`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+    
+    // Daily spending chart
+    const dailyData = {{ daily_spending|tojson }};
+    if (dailyData && dailyData.length > 0 && dailyData.some(item => item.amount > 0)) {
+        const ctxDaily = document.getElementById('dailySpendingChart').getContext('2d');
+        
+        const dailyLabels = dailyData.map(item => item.day);
+        const dailyAmounts = dailyData.map(item => item.amount);
+        
+        new Chart(ctxDaily, {
+            type: 'bar',
+            data: {
+                labels: dailyLabels,
+                datasets: [{
+                    label: 'Daily Spending',
+                    data: dailyAmounts,
+                    backgroundColor: 'rgba(75, 192, 192, 0.5)',
+                    borderColor: 'rgba(75, 192, 192, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return '$' + value.toFixed(2);
+                            }
+                        }
+                    }
+                },
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            title: function(context) {
+                                const index = context[0].dataIndex;
+                                return `Day ${dailyData[index].day} (${dailyData[index].date})`;
+                            },
+                            label: function(context) {
+                                return `Spending: $${context.raw.toFixed(2)}`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    } else {
+    // Display a message in the chart area
+    document.getElementById('dailySpendingChart').parentNode.innerHTML = 
+        '<p class="text-center text-muted">No daily spending data available for this period.</p>';
+}
+    
+    // Monthly trend chart
+    const monthsData = {{ months_data|tojson }};
+    if (monthsData.length > 0) {
+        const ctxMonthly = document.getElementById('monthlyTrendChart').getContext('2d');
+        
+        const monthLabels = monthsData.map(item => `${item.month_name} ${item.year}`);
+        const monthAmounts = monthsData.map(item => item.spending);
+        
+        new Chart(ctxMonthly, {
+            type: 'line',
+            data: {
+                labels: monthLabels,
+                datasets: [{
+                    label: 'Monthly Spending',
+                    data: monthAmounts,
+                    fill: false,
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    tension: 0.1,
+                    pointBackgroundColor: 'rgba(54, 162, 235, 1)',
+                    pointRadius: 5
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return '$' + value.toFixed(2);
+                            }
+                        }
+                    }
+                },
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return `Spending: $${context.raw.toFixed(2)}`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+});
+</script>
+{% endblock %}
