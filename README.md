@@ -47,3 +47,103 @@ A full-featured expense tracking application built with Flask that helps users m
    ```bash
    git clone https://github.com/Aashrytha/expense-tracker.git
    cd expense-tracker
+   ```
+
+2. Create and activate virtual environment
+   ```bash
+   python -m venv venv
+   
+   # Windows
+   venv\Scripts\activate
+   
+   # macOS/Linux
+   source venv/bin/activate
+   ```
+
+3. Install dependencies
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+4. Set up environment variables
+   ```bash
+   # Create a .env file with the following variables
+   SECRET_KEY=your_secret_key
+   FLASK_APP=run.py
+   FLASK_ENV=development
+   DATABASE_URL=sqlite:///expense_tracker.db
+   ```
+
+5. Initialize the database
+   ```bash
+   flask db init
+   flask db migrate -m "Initial migration"
+   flask db upgrade
+   ```
+
+6. Run the application
+   ```bash
+   flask run
+   ```
+
+7. Access the application at http://localhost:5000
+
+## Docker Deployment
+
+```bash
+# Build and run with Docker
+docker-compose up --build
+```
+
+## Usage
+
+1. Register a new account
+2. Add expense categories
+3. Set monthly budgets for categories
+4. Start tracking expenses
+5. View reports to analyze spending patterns
+
+## Project Structure
+
+```
+expense_tracker/
+├── app/                    # Application package
+│   ├── __init__.py         # Application factory
+│   ├── models.py           # Database models
+│   ├── routes.py           # View functions
+│   ├── forms.py            # Form definitions
+│   ├── auth.py             # Authentication routes
+│   ├── utils.py            # Utility functions
+│   └── notifications.py    # Alert system
+├── static/                 # Static files
+│   ├── css/
+│   └── js/
+├── templates/              # HTML templates
+├── migrations/             # Database migrations
+├── tests/                  # Test suite
+├── .env                    # Environment variables
+├── config.py               # Configuration
+├── requirements.txt        # Dependencies
+├── run.py                  # Application entry point
+├── Dockerfile              # Docker configuration
+└── docker-compose.yml      # Docker Compose configuration
+```
+
+## Testing
+
+```bash
+# Run tests
+python -m unittest discover tests
+```
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Implement your changes
+4. Run tests
+5. Submit a pull request
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
