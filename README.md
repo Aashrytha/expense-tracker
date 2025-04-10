@@ -103,47 +103,4 @@ docker-compose up --build
 4. Start tracking expenses
 5. View reports to analyze spending patterns
 
-## Project Structure
-
-```
-expense_tracker/
-├── app/                    # Application package
-│   ├── __init__.py         # Application factory
-│   ├── models.py           # Database models
-│   ├── routes.py           # View functions
-│   ├── forms.py            # Form definitions
-│   ├── auth.py             # Authentication routes
-│   ├── utils.py            # Utility functions
-│   └── notifications.py    # Alert system
-├── static/                 # Static files
-│   ├── css/
-│   └── js/
-├── templates/              # HTML templates
-├── migrations/             # Database migrations
-├── tests/                  # Test suite
-├── .env                    # Environment variables
-├── config.py               # Configuration
-├── requirements.txt        # Dependencies
-├── run.py                  # Application entry point
-├── Dockerfile              # Docker configuration
-└── docker-compose.yml      # Docker Compose configuration
-```
-
-## Testing
-
-```bash
-# Run tests
-python -m unittest discover tests
-```
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Implement your changes
-4. Run tests
-5. Submit a pull request
-
-## License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
+Thank You!
